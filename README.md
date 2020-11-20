@@ -202,8 +202,3 @@ Listener(
     },
     ...
 );
-```
-
-# 源码及Demo
-
-https://github.com/al4fun/3DBall
