@@ -1,29 +1,33 @@
 import 'dart:collection';
 import 'dart:math';
+import 'dart:ui' as ui;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'dart:ui' as ui;
+import 'package:flutter_app/user_level_model.dart';
+import 'package:flutter_app/util.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 //手指按下时命中的point
 PointAnimationSequence pointAnimationSequence;
-
 //球半径
-int radius = 150;
+int radius = 10;
 
 class XBallView extends StatefulWidget {
   final MediaQueryData mediaQueryData;
 
   ///需要展示的关键词
-  final List<String> keywords;
+  final List<UserLevelModel> keywords;
 
   ///需要高亮的关键词
-  final List<String> highlight;
-
+  final List<UserLevelModel> highlight;
+  final List<UserLevelModel> lineList;
   const XBallView({
     Key key,
     @required this.mediaQueryData,
     @required this.keywords,
     @required this.highlight,
+    @required this.lineList,
   }) : super(key: key);
 
   @override
@@ -37,10 +41,13 @@ class _XBallViewState extends State<XBallView>
   //带光晕的球图片宽度
   double sizeOfBallWithFlare;
 
-  List<Point> points = [];
-
+  static List<Point> points = [];
+  static List<Point> lineStartList = [];
+  static List<Point> lineEndtList = [];
+  static List<Point> smallBallList = [];
   Animation<double> animation;
   AnimationController controller;
+
   double currentRadian = 0;
 
   //手指移动的上一个位置
@@ -51,30 +58,39 @@ class _XBallViewState extends State<XBallView>
 
   //上次点击并命中关键词的时间
   int lastHitTime = 0;
-
   //当前的旋转轴
   Point axisVector = getAxisVector(Offset(2, -1));
 
   @override
   void initState() {
     super.initState();
-
+    // ssd();
     //计算球尺寸、半径等
-    sizeOfBallWithFlare = widget.mediaQueryData.size.width - 2 * 10;
+    sizeOfBallWithFlare = widget.mediaQueryData.size.width - 2 * 10.w;
     double sizeOfBall = sizeOfBallWithFlare * 32 / 35;
     radius = (sizeOfBall / 2).round();
 
-    //初始化点
-    generatePoints(widget.keywords);
+    generatePoints([widget.keywords, widget.highlight, widget.lineList]);
 
     //动画
     controller = AnimationController(
-        duration: Duration(milliseconds: 40000), vsync: this);
+        duration: Duration(milliseconds: 20000), vsync: this);
     animation = Tween(begin: 0.0, end: pi * 2).animate(controller);
     animation.addListener(() {
       setState(() {
+        for (int i = 0; i < smallBallList.length; i++) {
+          rotatePoint(
+              axisVector, smallBallList[i], animation.value - currentRadian);
+        }
         for (int i = 0; i < points.length; i++) {
-          rotatePoint(axisVector, points[i], animation.value - currentRadian);
+          Point point = points[i];
+
+          if (point.model.normName == "") {
+            rotatePoint(axisVector, points[i], animation.value - currentRadian);
+          } else {
+            rotatePoint(axisVector, points[i], animation.value - currentRadian,
+                isCore: true);
+          }
         }
         currentRadian = animation.value;
       });
@@ -82,6 +98,7 @@ class _XBallViewState extends State<XBallView>
     animation.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
         currentRadian = 0;
+
         controller.forward(from: 0.0);
       }
     });
@@ -94,7 +111,7 @@ class _XBallViewState extends State<XBallView>
 
     //数据有变化，重新初始化点
     if (oldWidget.keywords != widget.keywords) {
-      generatePoints(widget.keywords);
+      generatePoints([widget.keywords, widget.highlight, widget.lineList]);
     }
   }
 
@@ -104,12 +121,21 @@ class _XBallViewState extends State<XBallView>
     super.dispose();
   }
 
-  void generatePoints(List<String> keywords) {
+  static generatePoints(
+    List<List<UserLevelModel>> list,
+  ) async {
     points.clear();
+    lineStartList.clear();
+    lineEndtList.clear();
+    smallBallList.clear();
+
+    List<UserLevelModel> keywords = list[0];
+    List<UserLevelModel> highlight = list[1];
+    List<UserLevelModel> lineList = list[2];
 
     Random random = Random();
-    //仰角基准值
-    //均匀分布仰角
+    // 仰角基准值
+    // 均匀分布仰角
     List<double> centers = [
       0.5,
       0.35,
@@ -123,22 +149,72 @@ class _XBallViewState extends State<XBallView>
       0.8,
     ];
 
-    //将2pi分为keywords.length等份
-    double dAngleStep = 2 * pi / keywords.length;
+    double width = (radius * 2 - 100 * 2) / highlight.length;
+    //将2pi分为keywords.length等份;
+    for (int i = 0; i < highlight.length; i++) {
+      UserLevelModel model = highlight[i];
+
+      //仰角
+      double eAngle = (centers[i % 10] + (random.nextDouble() - 0.5) / 10) * pi;
+
+      //球极坐标转为直角坐标
+      double z = 0;
+      double x = -radius + 100 + width * i;
+      double y = radius * cos(eAngle);
+      if (i == 0) {
+        x = 50;
+        y = sqrt(100 * 100 - 50 * 50) / 2;
+      }
+
+      if (i == 1) {
+        x = -50;
+        y = sqrt(100 * 100 - 50 * 50) / 2;
+      }
+      if (i == 2) {
+        x = 0;
+        y = -sqrt(100 * 100 - 50 * 50) / 2;
+      }
+
+      Point point = Point(x, y, z, model: model);
+
+      point.name = model.normName;
+
+      // 计算point在各个z坐标时的paragraph
+      point.paragraphs = [];
+      //每3个z生成一个paragraphs，节省内存
+      for (int z = -radius; z <= radius; z += 3) {
+        point.paragraphs.add(
+          buildText(
+            point.name,
+            2.0 * radius,
+            getFontSize(z.toDouble() + 30),
+            getFontOpacity(model.lightLevel / 4),
+            true,
+          ),
+        );
+      }
+
+      points.add(point);
+    }
+
+    // //将2pi分为keywords.length等份;
+    double dAngleStep = 2 * pi / (keywords.length);
     for (int i = 0; i < keywords.length; i++) {
+      UserLevelModel model = keywords[i];
       //极坐标方位角
       double dAngle = dAngleStep * i;
       //仰角
       double eAngle = (centers[i % 10] + (random.nextDouble() - 0.5) / 10) * pi;
 
       //球极坐标转为直角坐标
+
+      double z = radius * sin(eAngle) * cos(dAngle);
       double x = radius * sin(eAngle) * sin(dAngle);
       double y = radius * cos(eAngle);
-      double z = radius * sin(eAngle) * cos(dAngle);
 
-      Point point = Point(x, y, z);
-      point.name = keywords[i];
-      bool needHight = _needHight(point.name);
+      Point point = Point(x, y, z, model: model);
+
+      point.name = model.mofitName;
       //计算point在各个z坐标时的paragraph
       point.paragraphs = [];
       //每3个z生成一个paragraphs，节省内存
@@ -148,17 +224,57 @@ class _XBallViewState extends State<XBallView>
             point.name,
             2.0 * radius,
             getFontSize(z.toDouble()),
-            getFontOpacity(z.toDouble()),
-            needHight,
+            getFontOpacity(model.lightLevel / 4),
+            false,
           ),
         );
       }
+
       points.add(point);
     }
+//划线
+    for (var j = 0; j < lineList.length; j++) {
+      for (int i = 0; i < points.length; i++) {
+        Point point = points[i];
+        UserLevelModel model = point.model;
+
+        UserLevelModel lineModel = lineList[j];
+        if (model.normId == lineModel.normId) {
+          lineStartList.add(point);
+        }
+        if (model.mofitId == lineModel.mofitId) {
+          lineEndtList.add(point);
+        }
+      }
+    }
+// 均分100份
+    double dAngle100 = 2 * pi / 300;
+    for (int i = 0; i < 300; i++) {
+      UserLevelModel model = UserLevelModel();
+      //极坐标方位角
+      double dAngle = dAngle100 * i;
+      //仰角
+      double eAngle = (centers[i % 10] + (random.nextDouble() - 0.5) / 10) * pi;
+
+      //球极坐标转为直角坐标
+
+      double z = radius * sin(eAngle) * cos(dAngle);
+      double x = radius * sin(eAngle) * sin(dAngle);
+      double y = radius * cos(eAngle);
+
+      Point point = Point(x, y, z, model: model);
+
+      point.name = '1';
+
+      smallBallList.add(point);
+    }
+
+    return keywords;
   }
 
   ///检查此关键字是否需要高亮
   bool _needHight(String keyword) {
+    return widget.highlight.any((element) => (element == keyword));
     bool ret = false;
     if (widget.highlight != null && widget.highlight.length > 0) {
       for (int i = 0; i < widget.highlight.length; i++) {
@@ -173,59 +289,31 @@ class _XBallViewState extends State<XBallView>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF4079A7),
-              Color(0xFF27507F),
+    return Container(
+      width: ScreenUtil.screenWidth,
+      height: ScreenUtil.screenHeight - ScreenUtil.statusBarHeight - 110 - 30,
+      decoration: BoxDecoration(
+        image: DecorationImage(
+          image: AssetImage("images/3d_bg.png"),
+          fit: BoxFit.cover,
+        ),
+      ),
+      child: Stack(
+        alignment: Alignment.center,
+        children: <Widget>[
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: <Widget>[
+              Stack(
+                alignment: Alignment.center,
+                children: <Widget>[
+                  _buildBall(),
+                ],
+              ),
             ],
           ),
-        ),
-        child: Stack(
-          alignment: Alignment.center,
-          children: <Widget>[
-            Positioned(
-              left: 0,
-              top: 0,
-              child: Image.asset(
-                "images/symptom_light@3x.png",
-                width: 260,
-                height: 260,
-                fit: BoxFit.fill,
-              ),
-            ),
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: <Widget>[
-                Stack(
-                  alignment: Alignment.center,
-                  children: <Widget>[
-                    Image.asset(
-                      "images/symptom_ballwithflare@3x.png",
-                      width: sizeOfBallWithFlare,
-                      height: sizeOfBallWithFlare,
-                      fit: BoxFit.fill,
-                    ),
-                    _buildBall(),
-                  ],
-                ),
-                Image.asset(
-                  "images/symptom_ball_shadow@3x.png",
-                  width: 260,
-                  height: 20,
-                  fit: BoxFit.fill,
-                ),
-              ],
-            ),
-          ],
-        ),
+        ],
       ),
     );
   }
@@ -265,7 +353,17 @@ class _XBallViewState extends State<XBallView>
             axisVector = getAxisVector(delta);
             //更新点的位置
             for (int i = 0; i < points.length; i++) {
-              rotatePoint(axisVector, points[i], radian);
+              Point point = points[i];
+              if (point.model.normId == "") {
+                rotatePoint(axisVector, points[i], radian);
+              } else {
+                rotatePoint(
+                    axisVector, points[i], animation.value - currentRadian,
+                    isCore: true);
+              }
+            }
+            for (int i = 0; i < smallBallList.length; i++) {
+              rotatePoint(axisVector, smallBallList[i], radian);
             }
           });
         }
@@ -299,6 +397,8 @@ class _XBallViewState extends State<XBallView>
           int searchRadiusW = 30;
           int searchRadiusH = 10;
           for (int i = 0; i < points.length; i++) {
+            Point model = points[i];
+
             //points[i].z >= 0：只在球正面的点中寻找
             if (points[i].z >= 0 &&
                 (upPosition.dx - points[i].x).abs() < searchRadiusW &&
@@ -310,7 +410,7 @@ class _XBallViewState extends State<XBallView>
 
                 //创建点选中动画序列
                 pointAnimationSequence = PointAnimationSequence(
-                    points[i], _needHight(points[i].name));
+                    points[i], model.model.normId == "" ? false : true);
 
                 //跳转页面
                 Future.delayed(Duration(milliseconds: 500), () {
@@ -327,10 +427,11 @@ class _XBallViewState extends State<XBallView>
         currentRadian = 0;
         controller.forward(from: 0.0);
       },
-      child: ClipOval(
+      child: Container(
         child: CustomPaint(
           size: Size(2.0 * radius, 2.0 * radius),
-          painter: MyPainter(points),
+          painter:
+              MyPainter(points, lineStartList, lineEndtList, smallBallList),
         ),
       ),
     );
@@ -374,25 +475,42 @@ class _XBallViewState extends State<XBallView>
 
 class MyPainter extends CustomPainter {
   List<Point> points;
-  Paint ballPaint, pointPaint;
+  List<Point> startLine;
+  List<Point> endLine;
+  List<Point> smallBallList;
+  Paint ballPaint;
+  Paint pointPaint;
+  Paint pointSmall;
 
-  MyPainter(this.points) {
+  MyPainter(this.points, this.startLine, this.endLine, this.smallBallList) {
+    //划线
     ballPaint = Paint()
-      ..color = Colors.white
+      ..color = Colors.white.withOpacity(1 / 4)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1;
-    pointPaint = Paint()
-      ..color = Colors.white
+    pointPaint = Paint()..style = PaintingStyle.fill;
+    pointSmall = Paint()
+      ..color = Colors.white10.withOpacity(1 / 6)
+      ..maskFilter = MaskFilter.blur(BlurStyle.normal, 1)
       ..style = PaintingStyle.fill;
   }
 
   @override
   void paint(Canvas canvas, Size size) {
-    //绘制球
-    //canvas.drawCircle(Offset(radius, radius), radius, ballPaint);
+    //绘制线
+    if (startLine != null && endLine != null) {
+      for (var i = 0; i < startLine.length; i++) {
+        List<double> xy1 = transformCoordinate(startLine[i]);
+        List<double> xy2 = transformCoordinate(endLine[i]);
+        canvas.drawLine(Offset(xy1[0], xy1[1] + 18),
+            Offset(xy2[0], xy2[1] + 18), ballPaint);
+      }
+    }
 
     //绘制文字
     for (int i = 0; i < points.length; i++) {
+      Point point = points[i];
+      UserLevelModel model = point.model;
       List<double> xy = transformCoordinate(points[i]);
 
       ui.Paragraph p;
@@ -419,6 +537,28 @@ class MyPainter extends CustomPainter {
         p,
         Offset(xy[0] - halfWidth, xy[1] - halfHeight),
       );
+
+      canvas.drawCircle(
+          Offset(
+              xy[0],
+              model.mofitName.length == 0
+                  ? (xy[1] + halfHeight + 20.w)
+                  : (xy[1] + halfHeight + 18.w)),
+          model.mofitName.length == 0 ? 6 : 4,
+          pointPaint
+            ..color = model.normId == ""
+                ? Colors.white.withOpacity(model.lightLevel / 4)
+                : HexColor("FEFFD8").withOpacity(model.lightLevel / 4)
+            ..maskFilter = MaskFilter.blur(BlurStyle.normal, 1.5));
+    }
+
+    //绘制小圆点
+    for (var i = 0; i < smallBallList.length; i++) {
+      Point point = smallBallList[i];
+      //小原点
+      // double op = 1 / 6 + Random().nextInt(3) / 40;
+      List<double> xy = transformCoordinate(point);
+      canvas.drawCircle(Offset(xy[0], xy[1]), 2, pointSmall);
     }
   }
 
@@ -434,11 +574,8 @@ class MyPainter extends CustomPainter {
 
 ///计算点point绕轴axis旋转radian弧度后的点坐标
 ///计算依据：罗德里格旋转矢量公式
-void rotatePoint(
-  Point axis,
-  Point point,
-  double radian,
-) {
+void rotatePoint(Point axis, Point point, double radian,
+    {bool isCore = false}) {
   double x = cos(radian) * point.x +
       (1 - cos(radian)) *
           (axis.x * point.x + axis.y * point.y + axis.z * point.z) *
@@ -451,18 +588,24 @@ void rotatePoint(
           axis.y +
       sin(radian) * (axis.z * point.x - axis.x * point.z);
 
-  double z = cos(radian) * point.z +
+  double z;
+
+  z = cos(radian) * point.z +
       (1 - cos(radian)) *
           (axis.x * point.x + axis.y * point.y + axis.z * point.z) *
           axis.z +
       sin(radian) * (axis.x * point.y - axis.y * point.x);
+  if (isCore == true) {
+    x = point.x;
+    y = point.y;
+    z = 0;
+  }
 
   point.x = x;
   point.y = y;
   point.z = z;
 }
 
-///根据手指触摸移动的直线距离，计算球体应该转动的近似角度
 ///单位角度对应的圆弧长度：2*pi*r/2*pi = 1/r
 double getRadian(double distance) {
   return distance / radius;
@@ -507,19 +650,18 @@ ui.Paragraph buildText(
   paragraphBuilder.pushStyle(
     ui.TextStyle(
         fontSize: fontSize,
+        fontWeight: highLight ? FontWeight.w600 : FontWeight.normal,
         color: highLight
-            ? Colors.white.withOpacity(opacity)
-            : Color(0xFFC1E0FF).withOpacity(opacity),
+            ? HexColor("#12C0E1").withOpacity(opacity)
+            : Colors.white.withOpacity(opacity),
         height: 1.0,
-        shadows: highLight
-            ? [
-                Shadow(
-                  color: Colors.white.withOpacity(opacity),
-                  offset: Offset(0, 0),
-                  blurRadius: 10,
-                )
-              ]
-            : []),
+        shadows: [
+          Shadow(
+            color: HexColor("#12C0E1").withOpacity(opacity),
+            offset: Offset(0, 0),
+            blurRadius: 5,
+          )
+        ]),
   );
   paragraphBuilder.addText(text);
 
@@ -530,20 +672,24 @@ ui.Paragraph buildText(
 
 double getFontSize(double z) {
   //点的z坐标为[-r,r]，对应文字的尺寸为[8,16]
-  return 8 + 8 * (z + radius) / (2 * radius);
+  // return 8 + 8 * (100 + radius) / (2 * radius);
+  return 8 + 10 * (z + radius) / (2 * radius);
 }
 
 double getFontOpacity(double z) {
   //点的z坐标为[-r,r]，对应点的透明度为[0.5,1]
-  return 0.5 + 0.5 * (z + radius) / (2 * radius);
+  // return z;
+  return z;
 }
 
 class Point {
   double x, y, z;
   String name;
+  UserLevelModel model;
+
   List<ui.Paragraph> paragraphs;
 
-  Point(this.x, this.y, this.z);
+  Point(this.x, this.y, this.z, {this.model});
 
   //z取值[-radius,radius]时的paragraph，依次存储在paragraphs中
   //每3个z生成一个paragraphs
@@ -568,10 +714,10 @@ class PointAnimationSequence {
   PointAnimationSequence(this.point, this.needHighLight) {
     paragraphs = Queue();
 
-    double fontSize = getFontSize(point.z);
-    double opacity = getFontOpacity(point.z);
+    double fontSize = needHighLight == true ? 20 : getFontSize(point.z);
+    double opacity = getFontOpacity(point.model.lightLevel / 4);
     //字号从fontSize变化到22
-    for (double fs = fontSize; fs <= 22; fs += 1) {
+    for (double fs = fontSize; fs <= 25; fs += 1) {
       paragraphs.addLast(
           buildText(point.name, 2.0 * radius, fs, opacity, needHighLight));
     }

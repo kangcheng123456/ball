@@ -1,0 +1,261 @@
+{
+    
+      "motif": [
+        {
+          "mofitId": "1285173250808156161",
+          "mofitName": "科技",
+          "normId": "",
+          "normName": "",
+          "lightLevel": 2,
+          "isShow": 0
+        },
+        {
+          "mofitId": "1285173250808156162",
+          "mofitName": "专注",
+          "normId": "",
+          "normName": "",
+          "lightLevel": 3,
+          "isShow": 0
+        },
+        {
+          "mofitId": "1285173250808156163",
+          "mofitName": "同理",
+          "normId": "",
+          "normName": "",
+          "lightLevel": 4,
+          "isShow": 0
+        },
+        {
+          "mofitId": "1285173250808156164",
+          "mofitName": "二胎",
+          "normId": "",
+          "normName": "",
+          "lightLevel": 4,
+          "isShow": 0
+        },
+     
+        {
+          "mofitId": "1285173250808156165",
+          "mofitName": "性教育",
+          "normId": "",
+          "normName": "",
+          "lightLevel": 1,
+          "isShow": 0
+        },
+        {
+          "mofitId": "1285173250808156166",
+          "mofitName": "过渡",
+          "normId": "",
+          "normName": "",
+          "lightLevel": 3,
+          "isShow": 0
+        },
+        {
+          "mofitId": "1285173250808156167",
+          "mofitName": "规则",
+          "normId": "",
+          "normName": "",
+          "lightLevel": 2,
+          "isShow": 0
+        },
+        {
+          "mofitId": "1285173250808156168",
+          "mofitName": "兴趣班",
+          "normId": "",
+          "normName": "",
+          "lightLevel": 4,
+          "isShow": 0
+        },
+        {
+          "mofitId": "1285173250808156169",
+          "mofitName": "二面性",
+          "normId": "",
+          "normName": "",
+          "lightLevel": 3,
+          "isShow": 0
+        },
+        {
+          "mofitId": "1285173250808156170",
+          "mofitName": "社会",
+          "normId": "",
+          "normName": "5",
+          "lightLevel": 4,
+          "isShow": 0
+        }
+       
+      ],
+      "norm": [
+        {
+          "mofitId": "",
+          "mofitName": "",
+          "normId": "7",
+          "normName": "孩子",
+          "lightLevel": 2,
+          "isShow": 0
+        },
+        {
+          "mofitId": "",
+          "mofitName": "",
+          "normId": "8",
+          "normName": "科学",
+          "lightLevel": 4,
+          "isShow": 0
+        },
+        {
+          "mofitId": "",
+          "mofitName": "",
+          "normId": "9",
+          "normName": "陪伴",
+          "lightLevel": 3,
+          "isShow": 0
+        }
+      ],
+      "line": [
+        {
+          "mofitId": "1285173250808156161",
+          "mofitName": "",
+          "normId": "7",
+          "normName": "懂孩子",
+          "lightLevel": 1,
+          "isShow": 0
+        },
+        {
+          "mofitId": "1285173250808156162",
+          "mofitName": "",
+          "normId": "7",
+          "normName": "懂孩子",
+          "lightLevel": 2,
+          "isShow": 0
+        },
+        {
+          "mofitId": "1285173250808156163",
+          "mofitName": "",
+          "normId": "7",
+          "normName": "懂孩子",
+          "lightLevel": 3,
+          "isShow": 0
+        },
+        {
+          "mofitId": "1285173250808156164",
+          "mofitName": "",
+          "normId": "7",
+          "normName": "懂孩子",
+          "lightLevel": 4,
+          "isShow": 0
+        },
+        {
+          "mofitId": "1285173250808156165",
+          "mofitName": "",
+          "normId": "7",
+          "normName": "懂孩子",
+          "lightLevel": 4,
+          "isShow": 0
+        },
+        {
+          "mofitId": "1285173250808156166",
+          "mofitName": "",
+          "normId": "7",
+          "normName": "懂孩子",
+          "lightLevel": 1,
+          "isShow": 0
+        },
+        {
+          "mofitId": "1285173250808156161",
+          "mofitName": "",
+          "normId": "8",
+          "normName": "懂孩子",
+          "lightLevel": 4,
+          "isShow": 0
+        },
+        {
+          "mofitId": "1285173250808156162",
+          "mofitName": "",
+          "normId": "8",
+          "normName": "懂孩子",
+          "lightLevel": 4,
+          "isShow": 0
+        },
+        {
+          "mofitId": "1285173250808156163",
+          "mofitName": "",
+          "normId": "8",
+          "normName": "懂孩子",
+          "lightLevel": 4,
+          "isShow": 0
+        },
+        {
+          "mofitId": "1285173250808156164",
+          "mofitName": "",
+          "normId": "8",
+          "normName": "懂孩子",
+          "lightLevel": 3,
+          "isShow": 0
+        },
+        {
+          "mofitId": "1285173250808156165",
+          "mofitName": "",
+          "normId": "8",
+          "normName": "懂孩子",
+          "lightLevel": 2,
+          "isShow": 0
+        },
+        {
+          "mofitId": "1285173250808156166",
+          "mofitName": "",
+          "normId": "8",
+          "normName": "懂孩子",
+          "lightLevel": 1,
+          "isShow": 0
+        },
+        {
+          "mofitId": "1285173250808156161",
+          "mofitName": "",
+          "normId": "9",
+          "normName": "懂孩子",
+          "lightLevel": 1,
+          "isShow": 0
+        },
+        {
+          "mofitId": "1285173250808156162",
+          "mofitName": "",
+          "normId": "9",
+          "normName": "懂孩子",
+          "lightLevel": 1,
+          "isShow": 0
+        },
+        {
+          "mofitId": "1285173250808156163",
+          "mofitName": "",
+          "normId": "9",
+          "normName": "懂孩子",
+          "lightLevel": 3,
+          "isShow": 0
+        },
+        {
+          "mofitId": "1285173250808156164",
+          "mofitName": "",
+          "normId": "9",
+          "normName": "懂孩子",
+          "lightLevel": 1,
+          "isShow": 0
+        },
+        {
+          "mofitId": "1285173250808156165",
+          "mofitName": "",
+          "normId": "9",
+          "normName": "懂孩子",
+          "lightLevel": 3,
+          "isShow": 0
+        },
+        {
+          "mofitId": "1285173250808156166",
+          "mofitName": "",
+          "normId": "9",
+          "normName": "懂孩子",
+          "lightLevel": 1,
+          "isShow": 0
+        }
+      
+      ]
+    }
+  
